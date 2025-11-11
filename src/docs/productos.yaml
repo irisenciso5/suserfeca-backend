@@ -1,0 +1,756 @@
+tags:
+  - name: Productos
+    description: Endpoints para gestión de productos
+
+paths:
+  /api/productos:
+    get:
+      tags:
+        - Productos
+      summary: Obtener todos los productos
+      description: Devuelve la lista de productos con opciones de filtrado y paginación
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: buscar
+          schema:
+            type: string
+          description: Término de búsqueda para filtrar productos
+          example: smartphone
+        - in: query
+          name: categoria_id
+          schema:
+            type: integer
+          description: ID de la categoría para filtrar productos
+          example: 1
+        - in: query
+          name: marca_id
+          schema:
+            type: integer
+          description: ID de la marca para filtrar productos
+          example: 3
+        - in: query
+          name: stock_bajo
+          schema:
+            type: boolean
+          description: Filtrar productos con stock bajo
+          example: true
+        - in: query
+          name: ordenar_por
+          schema:
+            type: string
+          description: Campo por el cual ordenar los resultados
+          example: precio_venta
+        - in: query
+          name: orden
+          schema:
+            type: string
+            enum: [asc, desc]
+          description: Dirección del ordenamiento
+          example: desc
+        - in: query
+          name: limite
+          schema:
+            type: integer
+          description: Cantidad de resultados por página
+          example: 10
+        - in: query
+          name: pagina
+          schema:
+            type: integer
+          description: Número de página
+          example: 1
+      responses:
+        '200':
+          description: Lista de productos obtenida correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total:
+                    type: integer
+                    example: 25
+                  pagina:
+                    type: integer
+                    example: 1
+                  limite:
+                    type: integer
+                    example: 10
+                  productos:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          example: 1
+                        codigo:
+                          type: string
+                          example: PROD-001
+                        descripcion:
+                          type: string
+                          example: Smartphone Samsung Galaxy S21
+                        categoria_id:
+                          type: integer
+                          example: 1
+                        marca_id:
+                          type: integer
+                          example: 1
+                        precio_compra:
+                          type: number
+                          format: float
+                          example: 500.00
+                        precio_venta:
+                          type: number
+                          format: float
+                          example: 699.99
+                        stock_actual:
+                          type: integer
+                          example: 15
+                        stock_minimo:
+                          type: integer
+                          example: 5
+                        ubicacion:
+                          type: string
+                          example: Estante A-12
+                        imagen_url:
+                          type: string
+                          example: /uploads/productos/galaxy-s21.jpg
+                        observaciones:
+                          type: string
+                          example: Modelo 2021, color negro
+                        pais_origen:
+                          type: string
+                          example: Corea del Sur
+                        Categoria:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                              example: 1
+                            nombre:
+                              type: string
+                              example: Electrónica
+                        Marca:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                              example: 1
+                            nombre:
+                              type: string
+                              example: Samsung
+        '401':
+          description: No autenticado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Token inválido o expirado
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Error interno del servidor
+    
+    post:
+      tags:
+        - Productos
+      summary: Crear un nuevo producto
+      description: Crea un nuevo producto en el sistema (vendedor o admin)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - codigo
+                - descripcion
+                - precio_venta
+              properties:
+                codigo:
+                  type: string
+                  example: PROD-025
+                descripcion:
+                  type: string
+                  example: Laptop HP Pavilion 15
+                categoria_id:
+                  type: integer
+                  example: 1
+                marca_id:
+                  type: integer
+                  example: 4
+                precio_compra:
+                  type: number
+                  format: float
+                  example: 450.00
+                precio_venta:
+                  type: number
+                  format: float
+                  example: 599.99
+                stock_actual:
+                  type: integer
+                  example: 10
+                stock_minimo:
+                  type: integer
+                  example: 3
+                ubicacion:
+                  type: string
+                  example: Estante B-05
+                imagen_url:
+                  type: string
+                  example: /uploads/productos/hp-pavilion.jpg
+                observaciones:
+                  type: string
+                  example: 8GB RAM, 512GB SSD, Windows 11
+                pais_origen:
+                  type: string
+                  example: China
+                proveedor_ids:
+                  type: array
+                  items:
+                    type: integer
+                  example: [1, 3]
+      responses:
+        '201':
+          description: Producto creado correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    example: 10
+                  codigo:
+                    type: string
+                    example: PROD-025
+                  descripcion:
+                    type: string
+                    example: Laptop HP Pavilion 15
+                  categoria_id:
+                    type: integer
+                    example: 1
+                  marca_id:
+                    type: integer
+                    example: 4
+                  precio_compra:
+                    type: number
+                    format: float
+                    example: 450.00
+                  precio_venta:
+                    type: number
+                    format: float
+                    example: 599.99
+                  stock_actual:
+                    type: integer
+                    example: 10
+                  stock_minimo:
+                    type: integer
+                    example: 3
+                  ubicacion:
+                    type: string
+                    example: Estante B-05
+                  imagen_url:
+                    type: string
+                    example: /uploads/productos/hp-pavilion.jpg
+                  observaciones:
+                    type: string
+                    example: 8GB RAM, 512GB SSD, Windows 11
+                  pais_origen:
+                    type: string
+                    example: China
+                  Categoria:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      nombre:
+                        type: string
+                        example: Electrónica
+                  Marca:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 4
+                      nombre:
+                        type: string
+                        example: HP
+                  Proveedores:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          example: 1
+                        nombre_empresa:
+                          type: string
+                          example: Distribuidora Tecnológica
+        '400':
+          description: Datos de entrada inválidos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Código, descripción y precio de venta son requeridos
+        '401':
+          description: No autenticado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Token inválido o expirado
+        '403':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Requiere rol de vendedor o administrador
+        '404':
+          description: Categoría o marca no encontrada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: La categoría especificada no existe
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Error interno del servidor
+
+  /api/productos/{id}:
+    get:
+      tags:
+        - Productos
+      summary: Obtener un producto por ID
+      description: Devuelve los datos de un producto específico
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: ID del producto
+          example: 1
+      responses:
+        '200':
+          description: Producto obtenido correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    example: 1
+                  codigo:
+                    type: string
+                    example: PROD-001
+                  descripcion:
+                    type: string
+                    example: Smartphone Samsung Galaxy S21
+                  categoria_id:
+                    type: integer
+                    example: 1
+                  marca_id:
+                    type: integer
+                    example: 1
+                  precio_compra:
+                    type: number
+                    format: float
+                    example: 500.00
+                  precio_venta:
+                    type: number
+                    format: float
+                    example: 699.99
+                  stock_actual:
+                    type: integer
+                    example: 15
+                  stock_minimo:
+                    type: integer
+                    example: 5
+                  ubicacion:
+                    type: string
+                    example: Estante A-12
+                  imagen_url:
+                    type: string
+                    example: /uploads/productos/galaxy-s21.jpg
+                  observaciones:
+                    type: string
+                    example: Modelo 2021, color negro
+                  pais_origen:
+                    type: string
+                    example: Corea del Sur
+                  Categoria:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      nombre:
+                        type: string
+                        example: Electrónica
+                  Marca:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      nombre:
+                        type: string
+                        example: Samsung
+                  Proveedores:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          example: 1
+                        nombre_empresa:
+                          type: string
+                          example: Distribuidora Tecnológica
+        '401':
+          description: No autenticado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Token inválido o expirado
+        '404':
+          description: Producto no encontrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Producto no encontrado
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Error interno del servidor
+    
+    put:
+      tags:
+        - Productos
+      summary: Actualizar un producto
+      description: Actualiza los datos de un producto específico (vendedor o admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: ID del producto
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                codigo:
+                  type: string
+                  example: PROD-001-UPD
+                descripcion:
+                  type: string
+                  example: Smartphone Samsung Galaxy S21 Ultra
+                categoria_id:
+                  type: integer
+                  example: 1
+                marca_id:
+                  type: integer
+                  example: 1
+                precio_compra:
+                  type: number
+                  format: float
+                  example: 550.00
+                precio_venta:
+                  type: number
+                  format: float
+                  example: 799.99
+                stock_minimo:
+                  type: integer
+                  example: 8
+                ubicacion:
+                  type: string
+                  example: Estante A-15
+                imagen_url:
+                  type: string
+                  example: /uploads/productos/galaxy-s21-ultra.jpg
+                observaciones:
+                  type: string
+                  example: Modelo 2021, color negro, 256GB
+                pais_origen:
+                  type: string
+                  example: Corea del Sur
+                proveedor_ids:
+                  type: array
+                  items:
+                    type: integer
+                  example: [1, 2]
+      responses:
+        '200':
+          description: Producto actualizado correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    example: 1
+                  codigo:
+                    type: string
+                    example: PROD-001-UPD
+                  descripcion:
+                    type: string
+                    example: Smartphone Samsung Galaxy S21 Ultra
+                  categoria_id:
+                    type: integer
+                    example: 1
+                  marca_id:
+                    type: integer
+                    example: 1
+                  precio_compra:
+                    type: number
+                    format: float
+                    example: 550.00
+                  precio_venta:
+                    type: number
+                    format: float
+                    example: 799.99
+                  stock_actual:
+                    type: integer
+                    example: 15
+                  stock_minimo:
+                    type: integer
+                    example: 8
+                  ubicacion:
+                    type: string
+                    example: Estante A-15
+                  imagen_url:
+                    type: string
+                    example: /uploads/productos/galaxy-s21-ultra.jpg
+                  observaciones:
+                    type: string
+                    example: Modelo 2021, color negro, 256GB
+                  pais_origen:
+                    type: string
+                    example: Corea del Sur
+                  Categoria:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      nombre:
+                        type: string
+                        example: Electrónica
+                  Marca:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      nombre:
+                        type: string
+                        example: Samsung
+                  Proveedores:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          example: 1
+                        nombre_empresa:
+                          type: string
+                          example: Distribuidora Tecnológica
+        '400':
+          description: Datos de entrada inválidos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Ya existe otro producto con ese código
+        '401':
+          description: No autenticado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Token inválido o expirado
+        '403':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Requiere rol de vendedor o administrador
+        '404':
+          description: Producto, categoría o marca no encontrada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Producto no encontrado
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Error interno del servidor
+    
+    delete:
+      tags:
+        - Productos
+      summary: Eliminar un producto
+      description: Elimina un producto específico (vendedor o admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: ID del producto
+          example: 10
+      responses:
+        '200':
+          description: Producto eliminado correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Producto eliminado correctamente
+        '400':
+          description: No se puede eliminar el producto
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: No se puede eliminar el producto porque tiene registros asociados
+                  movimientos:
+                    type: integer
+                    example: 5
+                  compras:
+                    type: integer
+                    example: 2
+                  ventas:
+                    type: integer
+                    example: 3
+        '401':
+          description: No autenticado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Token inválido o expirado
+        '403':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Requiere rol de vendedor o administrador
+        '404':
+          description: Producto no encontrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Producto no encontrado
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Error interno del servidor

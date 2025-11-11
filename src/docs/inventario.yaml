@@ -1,0 +1,473 @@
+tags:
+  - name: Inventario
+    description: Endpoints para gestión de movimientos de inventario
+
+paths:
+  /api/inventario:
+    get:
+      tags:
+        - Inventario
+      summary: Obtener todos los movimientos de inventario
+      description: Devuelve la lista de movimientos de inventario con opciones de filtrado y paginación
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: producto_id
+          schema:
+            type: integer
+          description: ID del producto para filtrar movimientos
+          example: 1
+        - in: query
+          name: tipo_movimiento
+          schema:
+            type: string
+            enum: [entrada, salida, ajuste]
+          description: Tipo de movimiento para filtrar
+          example: entrada
+        - in: query
+          name: fecha_inicio
+          schema:
+            type: string
+            format: date
+          description: Fecha inicial para filtrar movimientos
+          example: 2023-01-01
+        - in: query
+          name: fecha_fin
+          schema:
+            type: string
+            format: date
+          description: Fecha final para filtrar movimientos
+          example: 2023-12-31
+        - in: query
+          name: usuario_id
+          schema:
+            type: integer
+          description: ID del usuario para filtrar movimientos
+          example: 1
+        - in: query
+          name: limite
+          schema:
+            type: integer
+          description: Cantidad de resultados por página
+          example: 10
+        - in: query
+          name: pagina
+          schema:
+            type: integer
+          description: Número de página
+          example: 1
+      responses:
+        '200':
+          description: Lista de movimientos obtenida correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total:
+                    type: integer
+                    example: 25
+                  pagina:
+                    type: integer
+                    example: 1
+                  limite:
+                    type: integer
+                    example: 10
+                  movimientos:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          example: 1
+                        producto_id:
+                          type: integer
+                          example: 1
+                        tipo_movimiento:
+                          type: string
+                          enum: [entrada, salida, ajuste]
+                          example: entrada
+                        cantidad:
+                          type: integer
+                          example: 10
+                        motivo:
+                          type: string
+                          example: Compra #5
+                        fecha:
+                          type: string
+                          format: date-time
+                          example: 2023-01-15T10:30:00.000Z
+                        usuario_id:
+                          type: integer
+                          example: 1
+                        Producto:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                              example: 1
+                            codigo:
+                              type: string
+                              example: PROD-001
+                            descripcion:
+                              type: string
+                              example: Smartphone Samsung Galaxy S21
+                        Usuario:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                              example: 1
+                            nombre:
+                              type: string
+                              example: Administrador
+                            email:
+                              type: string
+                              example: admin@sistema.com
+        '401':
+          description: No autenticado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Token inválido o expirado
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Error interno del servidor
+    
+    post:
+      tags:
+        - Inventario
+      summary: Crear un nuevo movimiento de inventario
+      description: Registra un nuevo movimiento de inventario (vendedor o admin)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - producto_id
+                - tipo_movimiento
+                - cantidad
+              properties:
+                producto_id:
+                  type: integer
+                  example: 1
+                tipo_movimiento:
+                  type: string
+                  enum: [entrada, salida, ajuste]
+                  example: entrada
+                cantidad:
+                  type: integer
+                  example: 5
+                motivo:
+                  type: string
+                  example: Reposición de stock
+      responses:
+        '201':
+          description: Movimiento creado correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    example: 26
+                  producto_id:
+                    type: integer
+                    example: 1
+                  tipo_movimiento:
+                    type: string
+                    enum: [entrada, salida, ajuste]
+                    example: entrada
+                  cantidad:
+                    type: integer
+                    example: 5
+                  motivo:
+                    type: string
+                    example: Reposición de stock
+                  fecha:
+                    type: string
+                    format: date-time
+                    example: 2023-01-15T10:30:00.000Z
+                  usuario_id:
+                    type: integer
+                    example: 1
+                  Producto:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      codigo:
+                        type: string
+                        example: PROD-001
+                      descripcion:
+                        type: string
+                        example: Smartphone Samsung Galaxy S21
+                  Usuario:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      nombre:
+                        type: string
+                        example: Administrador
+                      email:
+                        type: string
+                        example: admin@sistema.com
+        '400':
+          description: Datos de entrada inválidos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Producto, tipo de movimiento y cantidad son requeridos
+        '401':
+          description: No autenticado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Token inválido o expirado
+        '403':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Requiere rol de vendedor o administrador
+        '404':
+          description: Producto no encontrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Producto no encontrado
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Error interno del servidor
+
+  /api/inventario/{id}:
+    get:
+      tags:
+        - Inventario
+      summary: Obtener un movimiento de inventario por ID
+      description: Devuelve los datos de un movimiento de inventario específico
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: ID del movimiento de inventario
+          example: 1
+      responses:
+        '200':
+          description: Movimiento obtenido correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    example: 1
+                  producto_id:
+                    type: integer
+                    example: 1
+                  tipo_movimiento:
+                    type: string
+                    enum: [entrada, salida, ajuste]
+                    example: entrada
+                  cantidad:
+                    type: integer
+                    example: 10
+                  motivo:
+                    type: string
+                    example: Compra #5
+                  fecha:
+                    type: string
+                    format: date-time
+                    example: 2023-01-15T10:30:00.000Z
+                  usuario_id:
+                    type: integer
+                    example: 1
+                  Producto:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      codigo:
+                        type: string
+                        example: PROD-001
+                      descripcion:
+                        type: string
+                        example: Smartphone Samsung Galaxy S21
+                  Usuario:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      nombre:
+                        type: string
+                        example: Administrador
+                      email:
+                        type: string
+                        example: admin@sistema.com
+        '401':
+          description: No autenticado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Token inválido o expirado
+        '404':
+          description: Movimiento no encontrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Movimiento de inventario no encontrado
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Error interno del servidor
+
+  /api/inventario/alertas/stock-bajo:
+    get:
+      tags:
+        - Inventario
+      summary: Obtener productos con stock bajo
+      description: Devuelve la lista de productos que tienen stock actual menor o igual al stock mínimo
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lista de productos con stock bajo obtenida correctamente
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                      example: 1
+                    codigo:
+                      type: string
+                      example: PROD-001
+                    descripcion:
+                      type: string
+                      example: Smartphone Samsung Galaxy S21
+                    categoria_id:
+                      type: integer
+                      example: 1
+                    marca_id:
+                      type: integer
+                      example: 1
+                    precio_compra:
+                      type: number
+                      format: float
+                      example: 500.00
+                    precio_venta:
+                      type: number
+                      format: float
+                      example: 699.99
+                    stock_actual:
+                      type: integer
+                      example: 5
+                    stock_minimo:
+                      type: integer
+                      example: 5
+                    Categoria:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          example: 1
+                        nombre:
+                          type: string
+                          example: Electrónica
+                    Marca:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          example: 1
+                        nombre:
+                          type: string
+                          example: Samsung
+        '401':
+          description: No autenticado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Token inválido o expirado
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Error interno del servidor

@@ -1,0 +1,660 @@
+tags:
+  - name: Ventas
+    description: Endpoints para gestión de ventas
+
+paths:
+  /api/ventas:
+    get:
+      tags:
+        - Ventas
+      summary: Obtener todas las ventas
+      description: Devuelve la lista de ventas con opciones de filtrado y paginación
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: cliente_id
+          schema:
+            type: integer
+          description: ID del cliente para filtrar ventas
+          example: 1
+        - in: query
+          name: usuario_id
+          schema:
+            type: integer
+          description: ID del usuario (vendedor) para filtrar ventas
+          example: 1
+        - in: query
+          name: fecha_inicio
+          schema:
+            type: string
+            format: date
+          description: Fecha inicial para filtrar ventas
+          example: 2023-01-01
+        - in: query
+          name: fecha_fin
+          schema:
+            type: string
+            format: date
+          description: Fecha final para filtrar ventas
+          example: 2023-12-31
+        - in: query
+          name: limite
+          schema:
+            type: integer
+          description: Cantidad de resultados por página
+          example: 10
+        - in: query
+          name: pagina
+          schema:
+            type: integer
+          description: Número de página
+          example: 1
+      responses:
+        '200':
+          description: Lista de ventas obtenida correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total:
+                    type: integer
+                    example: 25
+                  pagina:
+                    type: integer
+                    example: 1
+                  limite:
+                    type: integer
+                    example: 10
+                  ventas:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          example: 1
+                        cliente_id:
+                          type: integer
+                          example: 1
+                        usuario_id:
+                          type: integer
+                          example: 1
+                        fecha_venta:
+                          type: string
+                          format: date-time
+                          example: 2023-01-15T10:30:00.000Z
+                        descuento:
+                          type: number
+                          format: float
+                          example: 10.00
+                        monto_total:
+                          type: number
+                          format: float
+                          example: 689.99
+                        Cliente:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                              example: 1
+                            nombre:
+                              type: string
+                              example: Juan Pérez
+                            identificacion:
+                              type: string
+                              example: V-12345678
+                        Usuario:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                              example: 1
+                            nombre:
+                              type: string
+                              example: Administrador
+                            email:
+                              type: string
+                              example: admin@sistema.com
+        '401':
+          description: No autenticado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Token inválido o expirado
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Error interno del servidor
+    
+    post:
+      tags:
+        - Ventas
+      summary: Crear una nueva venta
+      description: Registra una nueva venta con sus detalles (vendedor o admin)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - cliente_id
+                - detalles
+              properties:
+                cliente_id:
+                  type: integer
+                  example: 1
+                descuento:
+                  type: number
+                  format: float
+                  example: 10.00
+                detalles:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - producto_id
+                      - cantidad
+                      - precio_unitario
+                    properties:
+                      producto_id:
+                        type: integer
+                        example: 1
+                      cantidad:
+                        type: integer
+                        example: 1
+                      precio_unitario:
+                        type: number
+                        format: float
+                        example: 699.99
+      responses:
+        '201':
+          description: Venta creada correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    example: 26
+                  cliente_id:
+                    type: integer
+                    example: 1
+                  usuario_id:
+                    type: integer
+                    example: 1
+                  fecha_venta:
+                    type: string
+                    format: date-time
+                    example: 2023-01-15T10:30:00.000Z
+                  descuento:
+                    type: number
+                    format: float
+                    example: 10.00
+                  monto_total:
+                    type: number
+                    format: float
+                    example: 689.99
+                  Cliente:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      nombre:
+                        type: string
+                        example: Juan Pérez
+                      identificacion:
+                        type: string
+                        example: V-12345678
+                  Usuario:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      nombre:
+                        type: string
+                        example: Administrador
+                      email:
+                        type: string
+                        example: admin@sistema.com
+                  DetalleVentas:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          example: 1
+                        venta_id:
+                          type: integer
+                          example: 26
+                        producto_id:
+                          type: integer
+                          example: 1
+                        cantidad:
+                          type: integer
+                          example: 1
+                        precio_unitario:
+                          type: number
+                          format: float
+                          example: 699.99
+                        Producto:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                              example: 1
+                            codigo:
+                              type: string
+                              example: PROD-001
+                            descripcion:
+                              type: string
+                              example: Smartphone Samsung Galaxy S21
+        '400':
+          description: Datos de entrada inválidos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Cliente y detalles son requeridos
+        '401':
+          description: No autenticado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Token inválido o expirado
+        '403':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Requiere rol de vendedor o administrador
+        '404':
+          description: Cliente o producto no encontrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Cliente no encontrado
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Error interno del servidor
+
+  /api/ventas/{id}:
+    get:
+      tags:
+        - Ventas
+      summary: Obtener una venta por ID
+      description: Devuelve los datos de una venta específica con sus detalles
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: ID de la venta
+          example: 1
+      responses:
+        '200':
+          description: Venta obtenida correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    example: 1
+                  cliente_id:
+                    type: integer
+                    example: 1
+                  usuario_id:
+                    type: integer
+                    example: 1
+                  fecha_venta:
+                    type: string
+                    format: date-time
+                    example: 2023-01-15T10:30:00.000Z
+                  descuento:
+                    type: number
+                    format: float
+                    example: 10.00
+                  monto_total:
+                    type: number
+                    format: float
+                    example: 689.99
+                  Cliente:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      nombre:
+                        type: string
+                        example: Juan Pérez
+                      identificacion:
+                        type: string
+                        example: V-12345678
+                  Usuario:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      nombre:
+                        type: string
+                        example: Administrador
+                      email:
+                        type: string
+                        example: admin@sistema.com
+                  DetalleVentas:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          example: 1
+                        venta_id:
+                          type: integer
+                          example: 1
+                        producto_id:
+                          type: integer
+                          example: 1
+                        cantidad:
+                          type: integer
+                          example: 1
+                        precio_unitario:
+                          type: number
+                          format: float
+                          example: 699.99
+                        Producto:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                              example: 1
+                            codigo:
+                              type: string
+                              example: PROD-001
+                            descripcion:
+                              type: string
+                              example: Smartphone Samsung Galaxy S21
+        '401':
+          description: No autenticado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Token inválido o expirado
+        '404':
+          description: Venta no encontrada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Venta no encontrada
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Error interno del servidor
+
+  /api/ventas/{id}/anular:
+    post:
+      tags:
+        - Ventas
+      summary: Anular una venta
+      description: Anula una venta y revierte el inventario (vendedor o admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: ID de la venta
+          example: 1
+      responses:
+        '200':
+          description: Venta anulada correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Venta anulada correctamente
+        '400':
+          description: La venta ya fue anulada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: La venta ya fue anulada previamente
+        '401':
+          description: No autenticado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Token inválido o expirado
+        '403':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Requiere rol de vendedor o administrador
+        '404':
+          description: Venta no encontrada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Venta no encontrada
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Error interno del servidor
+
+  /api/ventas/reportes/periodo:
+    get:
+      tags:
+        - Ventas
+      summary: Generar reporte de ventas por período
+      description: Devuelve un reporte de ventas para un período específico
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: fecha_inicio
+          required: true
+          schema:
+            type: string
+            format: date
+          description: Fecha inicial del período
+          example: 2023-01-01
+        - in: query
+          name: fecha_fin
+          required: true
+          schema:
+            type: string
+            format: date
+          description: Fecha final del período
+          example: 2023-12-31
+      responses:
+        '200':
+          description: Reporte generado correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  periodo:
+                    type: object
+                    properties:
+                      inicio:
+                        type: string
+                        format: date
+                        example: 2023-01-01
+                      fin:
+                        type: string
+                        format: date
+                        example: 2023-12-31
+                  totalVentas:
+                    type: integer
+                    example: 25
+                  montoTotal:
+                    type: number
+                    format: float
+                    example: 15000.00
+                  totalDescuentos:
+                    type: number
+                    format: float
+                    example: 500.00
+                  ventas:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          example: 1
+                        cliente_id:
+                          type: integer
+                          example: 1
+                        usuario_id:
+                          type: integer
+                          example: 1
+                        fecha_venta:
+                          type: string
+                          format: date-time
+                          example: 2023-01-15T10:30:00.000Z
+                        descuento:
+                          type: number
+                          format: float
+                          example: 10.00
+                        monto_total:
+                          type: number
+                          format: float
+                          example: 689.99
+                        Cliente:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                              example: 1
+                            nombre:
+                              type: string
+                              example: Juan Pérez
+                        Usuario:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                              example: 1
+                            nombre:
+                              type: string
+                              example: Administrador
+        '400':
+          description: Datos de entrada inválidos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Fecha de inicio y fin son requeridas
+        '401':
+          description: No autenticado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Token inválido o expirado
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Error interno del servidor

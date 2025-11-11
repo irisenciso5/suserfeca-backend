@@ -1,0 +1,70 @@
+  /api/ventas/reportes/excel:
+    get:
+      tags:
+        - Ventas
+      summary: Generar reporte de ventas en Excel
+      description: Devuelve un archivo Excel con el reporte de ventas mensual o anual
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: tipo
+          required: true
+          schema:
+            type: string
+            enum: [mensual, anual]
+          description: Tipo de reporte (mensual o anual)
+          example: mensual
+        - in: query
+          name: mes
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 12
+          description: Mes del reporte (requerido si tipo es mensual)
+          example: 5
+        - in: query
+          name: ano
+          required: true
+          schema:
+            type: integer
+          description: Año del reporte
+          example: 2023
+      responses:
+        '200':
+          description: Reporte Excel generado correctamente
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+        '400':
+          description: Datos de entrada inválidos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Tipo de reporte y año son requeridos
+        '401':
+          description: No autenticado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Token inválido o expirado
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Error interno del servidor

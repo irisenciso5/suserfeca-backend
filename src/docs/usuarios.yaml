@@ -1,0 +1,575 @@
+tags:
+  - name: Usuarios
+    description: Endpoints para gestión de usuarios
+
+paths:
+  /api/usuarios:
+    get:
+      tags:
+        - Usuarios
+      summary: Obtener todos los usuarios
+      description: Devuelve la lista de todos los usuarios (solo administradores)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lista de usuarios obtenida correctamente
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                      example: 1
+                    nombre:
+                      type: string
+                      example: Administrador
+                    email:
+                      type: string
+                      example: admin@sistema.com
+                    rol_id:
+                      type: integer
+                      example: 1
+                    fecha_creacion:
+                      type: string
+                      format: date-time
+                      example: 2023-01-01T00:00:00.000Z
+                    activo:
+                      type: boolean
+                      example: true
+                    Rol:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          example: 1
+                        nombre:
+                          type: string
+                          example: administrador
+        '401':
+          description: No autenticado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Token inválido o expirado
+        '403':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Requiere rol de administrador
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Error interno del servidor
+    
+    post:
+      tags:
+        - Usuarios
+      summary: Crear un nuevo usuario
+      description: Crea un nuevo usuario en el sistema (solo administradores)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - nombre
+                - email
+                - password
+                - rol_id
+              properties:
+                nombre:
+                  type: string
+                  example: Juan Pérez
+                email:
+                  type: string
+                  format: email
+                  example: juan@sistema.com
+                password:
+                  type: string
+                  format: password
+                  example: password123
+                rol_id:
+                  type: integer
+                  example: 2
+      responses:
+        '201':
+          description: Usuario creado correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    example: 2
+                  nombre:
+                    type: string
+                    example: Juan Pérez
+                  email:
+                    type: string
+                    example: juan@sistema.com
+                  rol_id:
+                    type: integer
+                    example: 2
+                  fecha_creacion:
+                    type: string
+                    format: date-time
+                    example: 2023-01-01T00:00:00.000Z
+                  activo:
+                    type: boolean
+                    example: true
+        '400':
+          description: Datos de entrada inválidos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Todos los campos son requeridos
+        '401':
+          description: No autenticado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Token inválido o expirado
+        '403':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Requiere rol de administrador
+        '404':
+          description: Rol no encontrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: El rol especificado no existe
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Error interno del servidor
+
+  /api/usuarios/{id}:
+    get:
+      tags:
+        - Usuarios
+      summary: Obtener un usuario por ID
+      description: Devuelve los datos de un usuario específico (solo administradores)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: ID del usuario
+          example: 1
+      responses:
+        '200':
+          description: Usuario obtenido correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    example: 1
+                  nombre:
+                    type: string
+                    example: Administrador
+                  email:
+                    type: string
+                    example: admin@sistema.com
+                  rol_id:
+                    type: integer
+                    example: 1
+                  fecha_creacion:
+                    type: string
+                    format: date-time
+                    example: 2023-01-01T00:00:00.000Z
+                  activo:
+                    type: boolean
+                    example: true
+                  Rol:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      nombre:
+                        type: string
+                        example: administrador
+        '401':
+          description: No autenticado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Token inválido o expirado
+        '403':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Requiere rol de administrador
+        '404':
+          description: Usuario no encontrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Usuario no encontrado
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Error interno del servidor
+    
+    put:
+      tags:
+        - Usuarios
+      summary: Actualizar un usuario
+      description: Actualiza los datos de un usuario específico (solo administradores)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: ID del usuario
+          example: 2
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nombre:
+                  type: string
+                  example: Juan Pérez Actualizado
+                email:
+                  type: string
+                  format: email
+                  example: juan.actualizado@sistema.com
+                rol_id:
+                  type: integer
+                  example: 2
+                activo:
+                  type: boolean
+                  example: true
+      responses:
+        '200':
+          description: Usuario actualizado correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    example: 2
+                  nombre:
+                    type: string
+                    example: Juan Pérez Actualizado
+                  email:
+                    type: string
+                    example: juan.actualizado@sistema.com
+                  rol_id:
+                    type: integer
+                    example: 2
+                  fecha_creacion:
+                    type: string
+                    format: date-time
+                    example: 2023-01-01T00:00:00.000Z
+                  activo:
+                    type: boolean
+                    example: true
+                  Rol:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 2
+                      nombre:
+                        type: string
+                        example: vendedor
+        '400':
+          description: Datos de entrada inválidos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: El email ya está registrado por otro usuario
+        '401':
+          description: No autenticado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Token inválido o expirado
+        '403':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Requiere rol de administrador
+        '404':
+          description: Usuario o rol no encontrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Usuario no encontrado
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Error interno del servidor
+    
+    delete:
+      tags:
+        - Usuarios
+      summary: Eliminar un usuario
+      description: Elimina un usuario específico (solo administradores)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: ID del usuario
+          example: 2
+      responses:
+        '200':
+          description: Usuario eliminado correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Usuario eliminado correctamente
+        '400':
+          description: No se puede eliminar el propio usuario
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: No puede eliminar su propio usuario
+        '401':
+          description: No autenticado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Token inválido o expirado
+        '403':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Requiere rol de administrador
+        '404':
+          description: Usuario no encontrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Usuario no encontrado
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Error interno del servidor
+
+  /api/usuarios/{id}/password:
+    put:
+      tags:
+        - Usuarios
+      summary: Cambiar contraseña de un usuario
+      description: Cambia la contraseña de un usuario específico (solo administradores)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: ID del usuario
+          example: 2
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - password
+              properties:
+                password:
+                  type: string
+                  format: password
+                  example: nuevaPassword123
+      responses:
+        '200':
+          description: Contraseña actualizada correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Contraseña actualizada correctamente
+        '400':
+          description: Datos de entrada inválidos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: La contraseña es requerida
+        '401':
+          description: No autenticado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Token inválido o expirado
+        '403':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Requiere rol de administrador
+        '404':
+          description: Usuario no encontrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Usuario no encontrado
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Error interno del servidor
