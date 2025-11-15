@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { Venta, DetalleVenta, Cliente, Producto, Usuario, MovimientoInventario, sequelize } = require('../models');
+const { Venta, DetalleVenta, Cliente, Producto, Usuario, MovimientoInventario, sequelize, Rol } = require('../models');
 const { verificarToken, esVendedor } = require('../middleware/auth.middleware');
 const { Op } = require('sequelize');
 const ExcelJS = require('exceljs');
@@ -17,6 +17,15 @@ router.get('/', verificarToken, async (req, res) => {
       pagina
     } = req.query;
     
+    // Obtener el usuario autenticado y su rol
+    const usuarioAutenticado = await Usuario.findByPk(req.userId, {
+      include: [{ model: Rol }]
+    });
+    
+    if (!usuarioAutenticado) {
+      return res.status(404).json({ message: 'Usuario no encontrado' });
+    }
+    
     // Configurar opciones de búsqueda
     const opciones = {
       include: [
@@ -27,14 +36,18 @@ router.get('/', verificarToken, async (req, res) => {
       order: [['fecha_venta', 'DESC']]
     };
     
+    // Si el usuario es vendedor, solo mostrar sus ventas
+    if (usuarioAutenticado.Rol.nombre === 'vendedor') {
+      opciones.where.usuario_id = req.userId;
+    }
+    // Si no es vendedor (es admin) y se especifica un usuario_id en la consulta, filtrar por ese usuario
+    else if (usuario_id) {
+      opciones.where.usuario_id = usuario_id;
+    }
+    
     // Filtrar por cliente
     if (cliente_id) {
       opciones.where.cliente_id = cliente_id;
-    }
-    
-    // Filtrar por usuario (vendedor)
-    if (usuario_id) {
-      opciones.where.usuario_id = usuario_id;
     }
     
     // Filtrar por rango de fechas
@@ -75,7 +88,17 @@ router.get('/', verificarToken, async (req, res) => {
 // Obtener una venta por ID
 router.get('/:id', verificarToken, async (req, res) => {
   try {
-    const venta = await Venta.findByPk(req.params.id, {
+    // Obtener el usuario autenticado y su rol
+    const usuarioAutenticado = await Usuario.findByPk(req.userId, {
+      include: [{ model: Rol }]
+    });
+    
+    if (!usuarioAutenticado) {
+      return res.status(404).json({ message: 'Usuario no encontrado' });
+    }
+    
+    // Configurar opciones de búsqueda
+    const opciones = {
       include: [
         { model: Cliente },
         { model: Usuario, attributes: ['id', 'nombre', 'email'] },
@@ -83,8 +106,16 @@ router.get('/:id', verificarToken, async (req, res) => {
           model: DetalleVenta,
           include: [{ model: Producto }]
         }
-      ]
-    });
+      ],
+      where: { id: req.params.id }
+    };
+    
+    // Si el usuario es vendedor, solo permitir ver sus propias ventas
+    if (usuarioAutenticado.Rol.nombre === 'vendedor') {
+      opciones.where.usuario_id = req.userId;
+    }
+    
+    const venta = await Venta.findOne(opciones);
     
     if (!venta) {
       return res.status(404).json({ message: 'Venta no encontrada' });
