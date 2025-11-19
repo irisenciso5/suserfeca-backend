@@ -621,4 +621,146 @@ router.get('/excel/productos/plantilla', async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /reportes/excel:
+ *   get:
+ *     summary: Genera un reporte en Excel con todos los productos
+ *     description: Genera un reporte en Excel con todos los productos, sin filtros de fechas
+ *     tags: [Productos]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Reporte generado correctamente
+ *         content:
+ *           application/vnd.openxmlformats-officedocument-spreadsheetml.sheet:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *       401:
+ *         description: No autorizado
+ *       500:
+ *         description: Error del servidor
+ */
+router.get('/reportes/excel', verificarToken, async (req, res) => {
+  try {
+    const { categoria_id } = req.query;
+
+    // Construir condición opcional por categoría
+    const where = {};
+    if (categoria_id) {
+      where.categoria_id = categoria_id;
+    }
+
+    // Obtener productos (todos o filtrados por categoría) con sus relaciones principales
+    const productos = await Producto.findAll({
+      include: [
+        { model: Categoria },
+        { model: Marca }
+      ],
+      where,
+      order: [['descripcion', 'ASC']]
+    });
+
+    // Crear libro de Excel
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'Sistema de Inventario';
+    workbook.lastModifiedBy = 'API';
+    workbook.created = new Date();
+    workbook.modified = new Date();
+
+    // Hoja principal de productos
+    const productosSheet = workbook.addWorksheet('Productos');
+
+    productosSheet.columns = [
+      { header: 'ID', key: 'id', width: 10 },
+      { header: 'Código', key: 'codigo', width: 20 },
+      { header: 'Descripción', key: 'descripcion', width: 40 },
+      { header: 'Categoría', key: 'categoria', width: 25 },
+      { header: 'Marca', key: 'marca', width: 25 },
+      { header: 'Precio Compra', key: 'precio_compra', width: 15 },
+      { header: 'Precio Venta', key: 'precio_venta', width: 15 },
+      { header: 'Stock Actual', key: 'stock_actual', width: 15 },
+      { header: 'Stock Mínimo', key: 'stock_minimo', width: 15 },
+      { header: 'Ubicación', key: 'ubicacion', width: 25 },
+      { header: 'País Origen', key: 'pais_origen', width: 20 }
+    ];
+
+    // Estilo para encabezados
+    productosSheet.getRow(1).font = { bold: true };
+    productosSheet.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFD3D3D3' }
+    };
+
+    // Agregar datos de productos
+    let totalProductos = 0;
+    let productosConStockBajo = 0;
+
+    productos.forEach(producto => {
+      const stockActual = producto.stock_actual || 0;
+      const stockMinimo = producto.stock_minimo || 0;
+
+      productosSheet.addRow({
+        id: producto.id,
+        codigo: producto.codigo,
+        descripcion: producto.descripcion,
+        categoria: producto.Categorium ? producto.Categorium.nombre : 'Sin categoría',
+        marca: producto.Marca ? producto.Marca.nombre : 'Generico',
+        precio_compra: producto.precio_compra !== null && producto.precio_compra !== undefined ? parseFloat(producto.precio_compra) : null,
+        precio_venta: producto.precio_venta !== null && producto.precio_venta !== undefined ? parseFloat(producto.precio_venta) : null,
+        stock_actual: stockActual,
+        stock_minimo: stockMinimo,
+        ubicacion: producto.ubicacion || '',
+        pais_origen: producto.pais_origen || ''
+      });
+
+      totalProductos++;
+      if (stockActual <= stockMinimo) {
+        productosConStockBajo++;
+      }
+    });
+
+    // Hoja de resumen
+    const resumenSheet = workbook.addWorksheet('Resumen');
+
+    resumenSheet.columns = [
+      { header: 'Concepto', key: 'concepto', width: 30 },
+      { header: 'Valor', key: 'valor', width: 20 }
+    ];
+
+    resumenSheet.getRow(1).font = { bold: true };
+    resumenSheet.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFD3D3D3' }
+    };
+
+    const fechaGeneracion = new Date();
+    const yyyy = fechaGeneracion.getFullYear();
+    const mm = String(fechaGeneracion.getMonth() + 1).padStart(2, '0');
+    const dd = String(fechaGeneracion.getDate()).padStart(2, '0');
+
+    resumenSheet.addRow({ concepto: 'Fecha de generación', valor: `${dd}/${mm}/${yyyy}` });
+    resumenSheet.addRow({ concepto: 'Total de productos', valor: totalProductos });
+    resumenSheet.addRow({ concepto: 'Productos con stock bajo', valor: productosConStockBajo });
+
+    // Configurar el nombre del archivo
+    const nombreArchivo = `reporte_productos_${yyyy}${mm}${dd}.xlsx`;
+
+    // Configurar la respuesta HTTP
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=${nombreArchivo}`);
+
+    // Escribir el archivo y enviarlo como respuesta
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    console.error('Error al generar reporte de productos en Excel:', error);
+    res.status(500).json({ message: 'Error al generar reporte de productos en Excel', error: error.message });
+  }
+});
+
 module.exports = router;

@@ -3,6 +3,7 @@ const router = express.Router();
 const { MovimientoInventario, Producto, Usuario, Categoria, Marca, sequelize } = require('../models');
 const { verificarToken, esVendedor } = require('../middleware/auth.middleware');
 const { Op } = require('sequelize');
+const ExcelJS = require('exceljs');
 
 // Obtener todos los movimientos de inventario
 router.get('/', verificarToken, async (req, res) => {
@@ -188,6 +189,184 @@ router.get('/alertas/stock-bajo', verificarToken, async (req, res) => {
     
     res.status(200).json(productosStockBajo);
   } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Generar reporte de movimientos de inventario en Excel
+router.get('/movimientos/reportes/excel', verificarToken, async (req, res) => {
+  try {
+    const { tipo, mes, ano } = req.query;
+
+    if (!tipo || !ano) {
+      return res.status(400).json({ message: 'Tipo de reporte y año son requeridos' });
+    }
+
+    if (tipo !== 'mensual' && tipo !== 'anual') {
+      return res.status(400).json({ message: 'Tipo de reporte debe ser mensual o anual' });
+    }
+
+    if (tipo === 'mensual' && (!mes || mes < 1 || mes > 12)) {
+      return res.status(400).json({ message: 'Mes debe ser un número entre 1 y 12' });
+    }
+
+    // Configurar rango de fechas
+    let fechaInicio, fechaFin;
+    const anoNum = parseInt(ano, 10);
+
+    if (tipo === 'mensual') {
+      const mesNum = parseInt(mes, 10);
+      fechaInicio = new Date(anoNum, mesNum - 1, 1);
+      fechaFin = new Date(anoNum, mesNum, 0);
+    } else {
+      fechaInicio = new Date(anoNum, 0, 1);
+      fechaFin = new Date(anoNum, 11, 31);
+    }
+
+    fechaFin.setHours(23, 59, 59, 999);
+
+    // Obtener movimientos
+    const movimientos = await MovimientoInventario.findAll({
+      where: {
+        fecha: {
+          [Op.between]: [fechaInicio, fechaFin]
+        }
+      },
+      include: [
+        { model: Producto },
+        { model: Usuario, attributes: ['id', 'nombre', 'email'] }
+      ],
+      order: [['fecha', 'ASC']]
+    });
+
+    // Crear libro de Excel
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'Sistema de Inventario';
+    workbook.lastModifiedBy = 'API';
+    workbook.created = new Date();
+    workbook.modified = new Date();
+
+    // Hoja principal: Movimientos
+    const movimientosSheet = workbook.addWorksheet('Movimientos');
+
+    movimientosSheet.columns = [
+      { header: 'ID', key: 'id', width: 10 },
+      { header: 'Fecha', key: 'fecha', width: 20 },
+      { header: 'Tipo', key: 'tipo', width: 12 },
+      { header: 'Producto', key: 'producto', width: 35 },
+      { header: 'Cantidad', key: 'cantidad', width: 12 },
+      { header: 'Usuario', key: 'usuario', width: 25 },
+      { header: 'Motivo', key: 'motivo', width: 45 }
+    ];
+
+    movimientosSheet.getRow(1).font = { bold: true };
+    movimientosSheet.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFD3D3D3' }
+    };
+
+    let totalEntradas = 0;
+    let totalSalidas = 0;
+    let totalAjustes = 0;
+
+    // Totales por producto
+    const totalesPorProducto = {};
+
+    movimientos.forEach(mov => {
+      const fechaMov = mov.fecha instanceof Date ? mov.fecha : new Date(mov.fecha);
+
+      movimientosSheet.addRow({
+        id: mov.id,
+        fecha: fechaMov.toLocaleDateString('es-ES'),
+        tipo: mov.tipo_movimiento,
+        producto: mov.Producto ? `${mov.Producto.codigo || ''} ${mov.Producto.descripcion || ''}`.trim() : 'Producto no especificado',
+        cantidad: mov.cantidad,
+        usuario: mov.Usuario ? mov.Usuario.nombre : 'Usuario no especificado',
+        motivo: mov.motivo || ''
+      });
+
+      // Acumular totales por tipo
+      if (mov.tipo_movimiento === 'entrada') {
+        totalEntradas += mov.cantidad;
+      } else if (mov.tipo_movimiento === 'salida') {
+        totalSalidas += mov.cantidad;
+      } else if (mov.tipo_movimiento === 'ajuste') {
+        totalAjustes += mov.cantidad;
+      }
+
+      // Totales por producto (entradas y salidas netas)
+      if (mov.Producto) {
+        const clave = mov.Producto.codigo || `ID-${mov.Producto.id}`;
+        if (!totalesPorProducto[clave]) {
+          totalesPorProducto[clave] = {
+            descripcion: mov.Producto.descripcion || '',
+            entradas: 0,
+            salidas: 0,
+            ajustes: 0
+          };
+        }
+
+        if (mov.tipo_movimiento === 'entrada') {
+          totalesPorProducto[clave].entradas += mov.cantidad;
+        } else if (mov.tipo_movimiento === 'salida') {
+          totalesPorProducto[clave].salidas += mov.cantidad;
+        } else if (mov.tipo_movimiento === 'ajuste') {
+          totalesPorProducto[clave].ajustes += mov.cantidad;
+        }
+      }
+    });
+
+    // Hoja de resumen
+    const resumenSheet = workbook.addWorksheet('Resumen');
+
+    resumenSheet.columns = [
+      { header: 'Concepto', key: 'concepto', width: 35 },
+      { header: 'Valor', key: 'valor', width: 20 }
+    ];
+
+    resumenSheet.getRow(1).font = { bold: true };
+    resumenSheet.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFD3D3D3' }
+    };
+
+    resumenSheet.addRow({ concepto: 'Período', valor: tipo === 'mensual' ? `${mes}/${ano}` : `Año ${ano}` });
+    resumenSheet.addRow({ concepto: 'Total de movimientos', valor: movimientos.length });
+    resumenSheet.addRow({ concepto: 'Total entradas', valor: totalEntradas });
+    resumenSheet.addRow({ concepto: 'Total salidas', valor: totalSalidas });
+    resumenSheet.addRow({ concepto: 'Total ajustes', valor: totalAjustes });
+
+    // Totales por producto
+    resumenSheet.addRow({ concepto: '', valor: '' });
+    resumenSheet.addRow({ concepto: 'MOVIMIENTOS POR PRODUCTO', valor: '' });
+
+    resumenSheet.addRow({
+      concepto: 'Producto (código - descripción)',
+      valor: 'Entradas / Salidas / Ajustes'
+    });
+
+    Object.keys(totalesPorProducto).forEach(cod => {
+      const info = totalesPorProducto[cod];
+      resumenSheet.addRow({
+        concepto: `${cod} - ${info.descripcion}`.trim(),
+        valor: `${info.entradas} / ${info.salidas} / ${info.ajustes}`
+      });
+    });
+
+    // Configurar nombre de archivo
+    const nombreArchivo = tipo === 'mensual'
+      ? `reporte_movimientos_inventario_${mes}_${ano}.xlsx`
+      : `reporte_movimientos_inventario_anual_${ano}.xlsx`;
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=${nombreArchivo}`);
+
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    console.error('Error al generar reporte Excel de movimientos:', error);
     res.status(500).json({ message: error.message });
   }
 });
